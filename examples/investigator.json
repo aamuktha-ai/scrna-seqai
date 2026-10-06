@@ -1,0 +1,11 @@
+{
+  "question": "Which public human lung single-cell datasets include epithelial and immune cell populations?",
+  "species": "Homo sapiens",
+  "tissue": "lung",
+  "cellTypes": [
+    "epithelial cell",
+    "macrophage"
+  ],
+  "keyword": "lung",
+  "notes": "Example search criteria. No investigator dataset is required."
+}
