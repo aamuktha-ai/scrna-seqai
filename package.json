@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "node --env-file-if-exists=.env server.js",
     "start": "node --env-file-if-exists=.env server.js",
     "test": "node --test",
-    "refresh:catalog": "node scripts/refresh-catalog.js"
+    "refresh:catalog": "node scripts/refresh-catalog.js",
+    "build:pages": "node scripts/build-pages.js"
   }
 }

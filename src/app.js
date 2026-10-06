@@ -2,6 +2,8 @@ import {SOURCES,speciesName} from './sources.js';
 import {analyze,reportCsv,validateInput} from './analysis.js';
 
 const $=id=>document.getElementById(id);
+const apiBase=document.querySelector('meta[name="scrna-api-base"]')?.content || '';
+
 const fields=['question','species','tissue','library','material','disease','cellTypes','isolation','depth','platform','annotation','covariates','notes','publicationText','keyword'];
 let catalog=null,report=null,visibleCount=15,modelConfigured=false,busy=false,modelBusy=false;
 function node(tag,text,className) {const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;}
@@ -39,13 +41,13 @@ for(const [id,source] of Object.entries(SOURCES)) {
   const caption=node('span',source.name);caption.append(node('small',source.description));label.append(checkbox,caption);$('sourceOptions').append(label);
 }
 async function initialize() {
-  const outcomes=await Promise.allSettled([fetch('reference-data/catalog.json').then(async response=>{if(!response.ok)throw new Error('The public metadata catalog could not be loaded. Run npm run refresh:catalog and reload.');return response.json();}),fetch('/api/status').then(response=>response.ok?response.json():{modelConfigured:false})]);
+  const outcomes=await Promise.allSettled([fetch('reference-data/catalog.json').then(async response=>{if(!response.ok)throw new Error('The public metadata catalog could not be loaded. Run npm run refresh:catalog and reload.');return response.json();}),fetch(apiBase+'/api/status').then(response=>response.ok?response.json():{modelConfigured:false})]);
   const [snapshot,status]=outcomes;
   if(snapshot.status==='fulfilled' && Array.isArray(snapshot.value.records)) {
     catalog=snapshot.value;$('catalogStatus').textContent=`${catalog.records.length.toLocaleString()} public metadata records · snapshot ${new Date(catalog.createdAt).toLocaleDateString()}`;renderSourceStatus(catalog.sourceStatus);$('analyzeButton').disabled=false;
   } else {error(snapshot.reason?.message || 'The catalog has an invalid format.');$('catalogStatus').textContent='Catalog unavailable.';}
   modelConfigured=status.status==='fulfilled' && status.value.modelConfigured;
-  $('modelStatus').textContent=modelConfigured?`Configured model: ${status.value.model}. Review is optional and requires the consent checkbox below.`:'Model review is not configured. Metadata scoring works locally. Set OPENAI_API_KEY and SCRNA_MODEL on the server to enable LLM review.';
+  $('modelStatus').textContent=modelConfigured?`Configured model: ${status.value.model}. Review is optional and requires the consent checkbox below.`:'LLM review is not enabled. Search, metadata cross-checking, and exports are available without it.';
 }
 
 $('sampleButton').addEventListener('click',async()=>{
@@ -60,7 +62,7 @@ async function discover(input) {
   let finished=0;
   const settled=await Promise.allSettled(input.sources.map(async source=>{
     try {
-      const response=await fetch('/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source,species:input.includeCrossSpecies?'':input.species,tissue:input.tissue})});
+      const response=await fetch(apiBase+'/api/discover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source,species:input.includeCrossSpecies?'':input.species,tissue:input.tissue})});
       const data=await response.json();if(!response.ok)throw new Error(data.error || 'Repository request failed.');return data;
     } finally {finished++;$('progress').textContent=`Repository discovery: ${finished} of ${input.sources.length} sources checked…`;}
   }));
@@ -138,7 +140,7 @@ $('modelButton').addEventListener('click',async()=>{
   const targetReport=report;
   modelBusy=true;$('modelButton').disabled=true;$('modelReview').textContent='Reviewing supplied metadata and excerpts…';
   try {
-    const response=await fetch('/api/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consent:$('modelConsent').checked,report:{...targetReport,ranked:targetReport.ranked.slice(0,10)}})});
+    const response=await fetch(apiBase+'/api/review',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consent:$('modelConsent').checked,report:{...targetReport,ranked:targetReport.ranked.slice(0,10)}})});
     const data=await response.json();if(!response.ok)throw new Error(data.error || 'Model review failed.');targetReport.llm=data;
     if(report===targetReport)$('modelReview').textContent=data.text;
   } catch(e) {targetReport.llm={status:'failed',error:e.message};if(report===targetReport)$('modelReview').textContent=`${e.message} Your metadata assessment and exports remain available.`;}

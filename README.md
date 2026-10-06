@@ -1,6 +1,6 @@
 # scRNA-SeqAI
 
-[Open the public app](https://scrna-seqai.d7bt7qrzfj.chatgpt.site) · [GitHub repository](https://github.com/aamuktha-ai/scrna-seqai)
+[Open the public app](https://aamuktha-ai.github.io/scrna-seqai/) · [GitHub repository](https://github.com/aamuktha-ai/scrna-seqai)
 
 A standalone CohortAI application for discovering and evaluating public single-cell RNA-sequencing studies against research criteria. This sibling app follows CohortAI-PAN's search-criteria → public-dataset-comparison → exportable-report workflow, with its own source connectors, scientific rubric, catalog, and server.
 
@@ -82,3 +82,7 @@ Tests cover missing metadata, species and material incompatibility, mixed assays
 - [HCA metadata and project exploration](https://data.humancellatlas.org/guides)
 - [Single Cell Expression Atlas](https://www.ebi.ac.uk/gxa/sc/)
 - [OpenAI Responses API quickstart](https://developers.openai.com/api/docs/quickstart)
+
+## GitHub Pages
+
+The public interface is published from `docs/` on `main`. Run `npm run build:pages` after changing frontend files and commit the updated output. Pages serves the interface and bundled catalog; live discovery uses the existing public backend through an explicitly allowed origin. Local use continues to use the local server.

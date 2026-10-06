@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head><meta name="scrna-api-base" content="https://scrna-seqai.d7bt7qrzfj.chatgpt.site"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>scRNA-SeqAI · CohortAI</title><link rel="stylesheet" href="src/styles.css"></head>
+<body>
+<main class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-mark" aria-hidden="true">◌</div><p class="eyebrow">A CohortAI application</p><h1>scRNA-SeqAI</h1><p class="lede">Find the right public single-cell data for your next study.</p>
+    <section class="workflow"><h2>Your workflow</h2><ol><li>Describe what you need</li><li>Choose public repositories</li><li>Evaluate compatibility</li><li>Review and export</li></ol></section>
+    <div class="sidebar-bottom"><span class="pill">Research prototype</span><p>Human + mouse<br>Metadata-first discovery</p><p class="small">A feasibility assessment guides curation. It does not perform expression-data integration.</p></div>
+  </aside>
+  <section class="workspace">
+    <header class="workspace-header"><div><p class="eyebrow">Public dataset discovery</p><h2>Find public datasets</h2></div><button id="sampleButton" type="button" class="secondary">Load example</button></header>
+    <form id="analysisForm">
+      <label>Scientific question<textarea id="question" rows="3" placeholder="Example: Find human lung single-cell datasets for comparing immune cell populations."></textarea></label>
+      <p class="hint">Search and cross-check public dataset metadata against your criteria. No uploads needed. Start with species and tissue; other criteria are optional.</p>
+      <div class="section-heading"><h3>Search criteria</h3></div><p id="fileStatus" class="hint" role="status"></p>
+      <div class="field-grid">
+        <label>Species<select id="species"><option value="Homo sapiens">Human · Homo sapiens</option><option value="Mus musculus">Mouse · Mus musculus</option></select></label>
+        <label>Tissue of origin<input id="tissue" required maxlength="120" placeholder="e.g. lung"></label>
+        <label>Preferred library preparation<input id="library" list="libraryOptions" placeholder="e.g. 10x 3' v3"><datalist id="libraryOptions"><option value="10x 3' v3"><option value="10x 3' v2"><option value="10x 5'"><option value="Smart-seq2"></datalist></label>
+        <label>Material<select id="material"><option value="">Any material</option><option value="cell">Whole cells</option><option value="nucleus">Nuclei</option></select></label>
+        <label>Condition<input id="disease" placeholder="normal, disease name…"></label>
+        <label>Target cell types<input id="cellTypes" placeholder="Comma-separated labels"></label>
+      </div>
+      <details class="metadata-details"><summary>Optional compatibility criteria</summary><div class="field-grid">
+        <label>Cell isolation<input id="isolation" placeholder="Dissociation, enrichment, sorting…"></label>
+        <label>Mean reads per cell<input id="depth" type="number" min="1" placeholder="Leave blank if unknown"></label>
+        <label>Sequencing platform<input id="platform" placeholder="e.g. Illumina NovaSeq 6000"></label>
+        <label>Annotation schema<input id="annotation" placeholder="e.g. Cell Ontology"></label>
+      </div><label>Required covariates<input id="covariates" placeholder="age, sex, donor id, batch"></label><label>Research requirements<textarea id="notes" rows="3" placeholder="Donor replication, sample handling, QC, study design…"></textarea></label><label>Publication or methods excerpts (optional)<textarea id="publicationText" rows="3" placeholder="Paste relevant excerpts with source URLs for optional LLM review."></textarea></label><p class="hint">Narrative fields inform optional LLM review. Metadata scoring uses the structured fields above. Linked publications are not automatically read.</p></details>
+      <div class="section-heading"><h3>Public repositories</h3><span class="hint">Select sources</span></div><div id="sourceOptions" class="source-options"></div>
+      <p id="catalogStatus" class="catalog-status" role="status">Loading the public metadata snapshot…</p>
+      <details class="source-details"><summary>Catalog coverage & provenance</summary><div id="sourceStatus"></div></details>
+      <div class="field-grid"><label>Keyword filter<input id="keyword" placeholder="e.g. lung, aging, pancreas"></label><label>Catalog mode<select id="catalogMode"><option value="live">Live repository discovery</option><option value="snapshot">Bundled metadata snapshot</option></select></label></div>
+      <label class="check"><input id="includeCrossSpecies" type="checkbox"><span>Include cross-species candidates for separate review</span></label>
+      <p class="hint">Live discovery sends tissue and species to GEO. Other sources load public indexes. Scientific questions and research notes are not sent to repositories.</p>
+      <div class="actions"><button id="analyzeButton" class="primary" type="submit" disabled>Search & cross-check datasets <span aria-hidden="true">→</span></button><button id="clearButton" class="secondary" type="button">Clear</button></div>
+      <p id="progress" class="hint" role="status"></p><p id="error" class="error" role="alert" hidden></p>
+    </form>
+  </section>
+  <section class="report-panel" aria-labelledby="reportTitle">
+    <header class="report-header"><div><p class="eyebrow">Evidence for reuse</p><h2 id="reportTitle">Feasibility report</h2></div><div class="export-actions"><button id="csvButton" class="secondary" disabled>CSV</button><button id="jsonButton" class="secondary" disabled>JSON</button></div></header>
+    <div id="emptyState" class="empty-state"><div class="empty-symbol" aria-hidden="true">◎</div><h3>Your next dataset starts here</h3><p>Search public single-cell studies and cross-check their metadata against your research criteria. See compatibility, missing evidence, and a suggested path to reuse.</p><div class="pathway-labels"><span>Direct integration</span><span>Reference mapping</span><span>Meta-analysis</span></div><p class="hint">Load the example to explore a human lung study.</p></div>
+    <div id="report" hidden><div id="summary"></div><p id="stale" class="notice" hidden>Inputs changed. Generate a new report to assess the updated search; exports still describe the previous assessment.</p><details class="method"><summary>How to interpret this report</summary><p id="methodText"></p><ul id="limitations"></ul></details><div id="overlapNotice"></div><div id="results"></div><button id="moreButton" class="secondary" hidden>Show more candidates</button>
+      <section class="model-panel"><p class="eyebrow">Optional second review</p><h3>Interpret the evidence with an LLM</h3><p id="modelStatus" class="hint">Checking model availability…</p><label class="check"><input id="modelConsent" type="checkbox"><span>Send this report’s search criteria, supplied excerpts, and the top 10 candidate records to the configured OpenAI model.</span></label><button id="modelButton" class="secondary" disabled>Review top candidates</button><div id="modelReview" class="model-review" role="status"></div></section>
+    </div>
+  </section>
+</main><script type="module" src="src/app.js"></script>
+</body></html>
