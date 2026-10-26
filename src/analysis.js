@@ -30,6 +30,24 @@ export function validateInput(input) {
   return input;
 }
 
+// Search text is normalized independently of scientific metadata labels.
+function searchText(value) {
+  return String(value ?? '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+}
+function containsTerms(text, query) {
+  const terms=searchText(query).split(/\s+/).filter(Boolean);
+  const tokens=new Set(searchText(text).split(/\s+/));
+  return terms.length>0 && terms.every(term=>tokens.has(term));
+}
+function conditionMatch(query, record) {
+  const requested=values(query);
+  if(!requested.length) return null;
+  if(requested.some(term=>values(record.disease).some(label=>containsTerms(label,term)))) return 'structured';
+  const description=[record.title,record.summary].join(' ');
+  const mentions=requested.flatMap(term=>term==='normal'?['normal','healthy','healthy control']: [term]);
+  return mentions.some(term=>containsTerms(description,term)) ? 'text' : null;
+}
+
 function compare(key, investigator, candidate) {
   const local=values(investigator[key]), remote=values(candidate[key]);
   if(investigator.mode==='discovery' && !local.length) return {status:'not-requested',credit:0,note:'No preference specified. Public metadata is shown for cross-checking.'};
@@ -98,14 +116,18 @@ export function analyze(input,records,{sourceStatus=[],catalogVersion='imported'
   const eligible=selected.filter(r=>{
     const species=values(r.species);
     if(!input.includeCrossSpecies && species.length && !species.includes(normalize(input.species))) return false;
-    if(input.keyword) {
-      const words=input.keyword.toLowerCase().trim().split(/\s+/);
-      const text=[r.title,r.summary,...list(r.tissue),...list(r.cellTypes),...list(r.disease)].join(' ').toLowerCase();
-      if(!words.every(word=>text.includes(word))) return false;
+    if(input.mode==='discovery' && values(input.disease).length && !conditionMatch(input.disease,r)) return false;
+    if(searchText(input.keyword)) {
+      const text=[r.id,...list(r.aliases),r.title,r.summary,...DIMENSIONS.flatMap(([key])=>list(r[key])),...list(r.cellTypes)].join(' ');
+      if(!containsTerms(text,input.keyword)) return false;
     }
     return true;
   });
-  const ranked=eligible.map(r=>assessCandidate(input,r)).sort((a,b)=>b.score-a.score || b.comparableEvidence-a.comparableEvidence || a.id.localeCompare(b.id));
+  const ranked=eligible.map(r=>{
+    const assessed=assessCandidate(input,r);
+    if(input.mode==='discovery' && values(input.disease).length) assessed.conditionMatch=conditionMatch(input.disease,r);
+    return assessed;
+  }).sort((a,b)=>b.score-a.score || b.comparableEvidence-a.comparableEvidence || a.id.localeCompare(b.id));
   const overlaps=relatedRecords(eligible);
   return {version:VERSION,createdAt:new Date().toISOString(),catalogVersion,input,sourceStatus,totalAvailable:selected.length,candidateCount:ranked.length,ranked,possibleOverlaps:overlaps,
     method:'Unvalidated metadata screening heuristic, not a probability of successful integration. In discovery mode, criteria fit is normalized over specified criteria only; unspecified preferences are not mismatches. Missing public evidence receives zero credit; text-inferred fields receive at most 25% of their weight. Mixed labels receive partial credit. Candidate completeness measures reported fields across all dimensions, not their reliability. A high criteria-fit score does not establish integration readiness.',

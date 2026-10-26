@@ -19,7 +19,7 @@
         <label>Tissue of origin<input id="tissue" required maxlength="120" placeholder="e.g. lung"></label>
         <label>Preferred library preparation<input id="library" list="libraryOptions" placeholder="e.g. 10x 3' v3"><datalist id="libraryOptions"><option value="10x 3' v3"><option value="10x 3' v2"><option value="10x 5'"><option value="Smart-seq2"></datalist></label>
         <label>Material<select id="material"><option value="">Any material</option><option value="cell">Whole cells</option><option value="nucleus">Nuclei</option></select></label>
-        <label>Condition<input id="disease" placeholder="normal, disease name…"></label>
+        <label>Condition filter<input id="disease" placeholder="normal, disease name…"></label>
         <label>Target cell types<input id="cellTypes" placeholder="Comma-separated labels"></label>
       </div>
       <details class="metadata-details"><summary>Optional compatibility criteria</summary><div class="field-grid">
@@ -31,8 +31,9 @@
       <div class="section-heading"><h3>Public repositories</h3><span class="hint">Select sources</span></div><div id="sourceOptions" class="source-options"></div>
       <p id="catalogStatus" class="catalog-status" role="status">Loading the public metadata snapshot…</p>
       <details class="source-details"><summary>Catalog coverage & provenance</summary><div id="sourceStatus"></div></details>
-      <div class="field-grid"><label>Keyword filter<input id="keyword" placeholder="e.g. lung, aging, pancreas"></label><label>Catalog mode<select id="catalogMode"><option value="live">Live repository discovery</option><option value="snapshot">Bundled metadata snapshot</option></select></label></div>
+      <div class="field-grid"><label>Keyword filter<input id="keyword" placeholder="e.g. lung aging or GSE12345"></label><label>Catalog mode<select id="catalogMode"><option value="live">Live repository discovery</option><option value="snapshot">Bundled metadata snapshot</option></select></label></div>
       <label class="check"><input id="includeCrossSpecies" type="checkbox"><span>Include cross-species candidates for separate review</span></label>
+      <p class="hint">Condition filters reported disease labels and title/summary mentions; text matches need confirmation. Keywords match all entered words across metadata and accession IDs. Both filters apply to retrieved records, not the entire repositories.</p>
       <p class="hint">Live discovery sends tissue and species to GEO. Other sources load public indexes. Scientific questions and research notes are not sent to repositories.</p>
       <div class="actions"><button id="analyzeButton" class="primary" type="submit" disabled>Search & cross-check datasets <span aria-hidden="true">→</span></button><button id="clearButton" class="secondary" type="button">Clear</button></div>
       <p id="progress" class="hint" role="status"></p><p id="error" class="error" role="alert" hidden></p>

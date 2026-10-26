@@ -69,3 +69,39 @@ test('discovery cross-checks public metadata without uploads or investigator pro
   const missing=analyze(criteria,[{...candidate,tissue:[]}]).ranked[0];
   assert.equal(missing.score,50);
 });
+
+test('discovery condition filters unrelated and unknown records and identifies evidence',()=>{
+  const criteria={mode:'discovery',species:'human',tissue:'lung',sources:['geo'],disease:'lung cancer'};
+  const records=[
+    {...candidate,id:'structured',disease:['lung cancer','normal']},
+    {...candidate,id:'text',disease:[],title:'Single-cell lung cancer study'},
+    {...candidate,id:'unrelated',disease:['diabetes']},
+    {...candidate,id:'missing',disease:[]}
+  ];
+  const result=analyze(criteria,records);
+  assert.deepEqual(result.ranked.map(r=>r.id).sort(),['structured','text']);
+  assert.equal(result.ranked.find(r=>r.id==='structured').conditionMatch,'structured');
+  const text=result.ranked.find(r=>r.id==='text');
+  assert.equal(text.conditionMatch,'text');
+  assert.equal(text.dimensions.find(d=>d.key==='disease').status,'unknown');
+  assert.equal(analyze({...criteria,disease:''},records).candidateCount,4);
+});
+test('condition aliases match healthy/normal and do not match parts of unrelated words',()=>{
+  const criteria={mode:'discovery',species:'human',tissue:'lung',sources:['geo'],disease:'healthy'};
+  assert.equal(analyze(criteria,[candidate]).candidateCount,1);
+  assert.equal(analyze(criteria,[{...candidate,disease:[],title:'Abnormal development'}]).candidateCount,0);
+});
+test('keywords handle punctuation, accession aliases, protocols and whole words',()=>{
+  const row={...candidate,id:'GSE12345',covariates:[],aliases:['E-GEOD-12345'],title:'Lung aging: single-cell study'};
+  for(const keyword of ['lung, aging',' SINGLE-CELL ','GSE12345','E-GEOD-12345','10x']) {
+    assert.equal(analyze({...input,keyword},[row]).candidateCount,1,keyword);
+  }
+  for(const keyword of ['lung pancreas','age','GSE123']) assert.equal(analyze({...input,keyword},[row]).candidateCount,0,keyword);
+  assert.equal(analyze({...input,keyword:'   '},[row]).candidateCount,1);
+});
+test('keyword and condition filters combine without changing tissue assessment',()=>{
+  const criteria={mode:'discovery',species:'human',tissue:'lung',sources:['geo'],disease:'normal',keyword:'test'};
+  const result=analyze(criteria,[candidate,{...candidate,id:'other',title:'Other record'}]);
+  assert.equal(result.candidateCount,1);
+  assert.equal(result.ranked[0].dimensions.find(d=>d.key==='tissue').status,'match');
+});

@@ -87,7 +87,7 @@ function renderReport() {
   $('emptyState').hidden=true;$('report').hidden=false;$('stale').hidden=true;$('csvButton').disabled=false;$('jsonButton').disabled=false;$('modelConsent').checked=false;$('modelReview').textContent='';
   const metrics=node('div',undefined,'metrics');
   for(const [value,label] of [[report.candidateCount.toLocaleString(),'candidate records'],[report.input.sources.length,'repositories selected'],[report.ranked[0]?.score ?? '—','top criteria fit / 100']]) {const tile=node('div',undefined,'metric');tile.append(node('strong',String(value)),node('span',label));metrics.append(tile);}
-  $('summary').replaceChildren(metrics,node('p',`Search: ${report.input.species} · ${report.input.tissue}. Ranked by structured metadata; keyword filter: ${report.input.keyword || 'none'}. Screening scores require scientific review.`,'report-note'));
+  $('summary').replaceChildren(metrics,node('p',`Search: ${report.input.species} · ${report.input.tissue}. Ranked by structured metadata; condition filter: ${report.input.disease || 'none'}; keyword filter: ${report.input.keyword || 'none'}. Screening scores require scientific review.`,'report-note'));
   const failures=report.sourceStatus.filter(s=>s.status==='fallback');if(failures.length)$('summary').append(node('p',`Live discovery failed for ${failures.map(s=>SOURCES[s.source].name).join(', ')}. These sources use the dated bundled snapshot; see provenance for errors and scope.`,'notice'));
   $('methodText').textContent=report.method;$('limitations').replaceChildren(...report.limitations.map(text=>node('li',text)));
   $('overlapNotice').replaceChildren();
@@ -102,7 +102,11 @@ function candidateCard(candidate,index) {
   const pathway=node('span',candidate.pathway,`pathway ${/review|Cross-species|Different tissue/.test(candidate.pathway)?'review':''}`);
   const scores=node('div',undefined,'score-line');
   for(const [value,label,suffix] of [[candidate.score,'criteria fit','/100'],[candidate.completeness,'metadata reported','%'],[candidate.comparableEvidence,'comparable evidence','%']]) {const item=node('span');item.append(node('strong',`${value}${suffix} `),document.createTextNode(label));scores.append(item);}
-  head.append(top,heading,meta,pathway,scores);card.append(head);
+  head.append(top,heading,meta,pathway,scores);
+  if(candidate.conditionMatch)head.append(node('p',candidate.conditionMatch==='structured'
+    ? `Condition matches reported metadata: ${candidate.disease.join(', ')}. Verify the relevant sample subset.`
+    : 'Condition terms occur in the title or summary only. This is a text match, not confirmation of sample condition; review the source.', 'report-note'));
+  card.append(head);
   const details=node('details'),summary=node('summary','Review evidence, gaps & next steps');details.append(summary);
   let rendered=false;
   details.addEventListener('toggle',()=>{if(details.open&&!rendered){details.append(evidence(candidate));rendered=true;}});
@@ -126,7 +130,7 @@ function evidence(candidate) {
 }
 function renderResults() {
   $('results').replaceChildren(...report.ranked.slice(0,visibleCount).map(candidateCard));
-  if(!report.ranked.length)$('results').append(node('p','No candidate records matched these filters. Broaden the keyword or try live discovery. A limited catalog search does not establish that no suitable data exist.','notice'));
+  if(!report.ranked.length)$('results').append(node('p','No candidate records matched these filters. Broaden the condition or keyword filters, or try live discovery. A limited catalog search does not establish that no suitable data exist.','notice'));
   $('moreButton').hidden=visibleCount>=report.ranked.length;
   $('moreButton').textContent=`Show more (${Math.min(visibleCount,report.ranked.length)} of ${report.ranked.length})`;
 }
